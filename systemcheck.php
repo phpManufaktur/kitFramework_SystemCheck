@@ -492,7 +492,7 @@ if (isset($_GET['action']) && ($_GET['action'] === strtolower('phpinfo'))) {
 // check the system for the kitFramework
 $info = new SystemCheck();
 $info->setRequriredPHPVersion('5.3.3');
-$info->setRequiredMySQLVersion('5.0.0');
+$info->setRequiredMySQLVersion('5.0.3');
 $info->setRequiredCURL(true);
 $info->setRequriredZIPArchive(true);
 $info->setRequiredInnoDB(true);

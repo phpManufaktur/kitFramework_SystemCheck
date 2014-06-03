@@ -31,6 +31,9 @@ class SystemCheck
     protected static $innoDB_available = null;
     protected static $required_innoDB = null;
 
+    protected static $PDO_MySQL_enabled = null;
+    protected static $required_PDO_MySQL = null;
+
     protected static $supported_cms_types = array(
         'WebsiteBaker',
         'LEPTON CMS',
@@ -78,6 +81,16 @@ class SystemCheck
     public function setRequiredMySQLVersion($mysql_version)
     {
         self::$required_MYSQL_VERSION = $mysql_version;
+    }
+
+    /**
+     * Determine wether PDO is needed or not
+     *
+     * @param boolean $required
+     */
+    public function setRequiredPDOmySQL($required)
+    {
+        self::$required_PDO_MySQL = (bool) $required;
     }
 
     /**
@@ -297,7 +310,7 @@ class SystemCheck
     /**
      * Return an array with information about cURL
      *
-     * @return multitype:number
+     * @return array
      */
     protected function isCURLinstalled()
     {
@@ -311,6 +324,25 @@ class SystemCheck
             'checked' => (self::$required_CURL && !self::$detected_CURL) ? 0 : 1,
             'css' => (self::$required_CURL && !self::$detected_CURL) ? 'fail' : 'checked'
             );
+    }
+
+    /**
+     * Return an array with information about PDO_MYSQL
+     *
+     * @return array
+     */
+    protected function isPDOmySQLenabled()
+    {
+        self::$PDO_MySQL_enabled = extension_loaded('pdo_mysql');
+        if (is_null(self::$required_PDO_MySQL)) {
+            self::$required_PDO_MySQL = self::$PDO_MySQL_enabled;
+        }
+        return array(
+            'installed' => (int) self::$PDO_MySQL_enabled,
+            'required' => (int) self::$required_PDO_MySQL,
+            'checked' => (self::$required_PDO_MySQL && !self::$PDO_MySQL_enabled) ? 0 : 1,
+            'css' => (self::$required_PDO_MySQL && !self::$PDO_MySQL_enabled) ? 'fail' : 'checked'
+        );
     }
 
     /**
@@ -338,6 +370,8 @@ class SystemCheck
         $curl_installed = $result['cURL']['installed'] ? 'Yes' : 'No';
         $zip_required = $result['ZIPArchive']['required'] ? 'Yes' : 'No';
         $zip_installed = $result['ZIPArchive']['installed'] ? 'Yes' : 'No';
+        $pdo_mysql_required = $result['PDOmySQL']['required'] ? 'Yes' : 'No';
+        $pdo_mysql_enabled = $result['PDOmySQL']['installed'] ? 'Yes' : 'No';
         echo <<<EOD
 <!DOCTYPE html>
 <html lang=en>
@@ -405,7 +439,7 @@ class SystemCheck
     </head>
     <body>
         <h1>kitFramework SystemCheck</h2>
-        <p>&copy 2013 <a href="https://phpmanufaktur.de">phpManufaktur</a> by <a href="mailto:ralf.hertsch@phpmanufaktur.de">Ralf Hertsch</a></p>
+        <p>&copy 2014 <a href="https://phpmanufaktur.de">phpManufaktur</a> by <a href="mailto:ralf.hertsch@phpmanufaktur.de">Ralf Hertsch</a></p>
         <fieldset>
             <legend>CMS</legend>
             <div class="label">CMS Type</div>
@@ -433,6 +467,13 @@ class SystemCheck
             <div class="value">{$result['MySQL']['required']}</div>
             <div class="label">Installed</div>
             <div class="value {$result['MySQL']['css']}">{$result['MySQL']['installed']}</div>
+        </fieldset>
+        <fieldset>
+            <legend>PDO MySQL Extension</legend>
+            <div class="label">Required</div>
+            <div class="value">{$pdo_mysql_required}</div>
+            <div class="label">Available</div>
+            <div class="value {$result['PDOmySQL']['css']}">{$pdo_mysql_enabled}</div>
         </fieldset>
         <fieldset>
             <legend>MySQL InnoDB Engine</legend>
@@ -476,6 +517,7 @@ EOD;
             'InnoDB' => $this->getInnoDBinformation(),
             'cURL' => $this->isCURLinstalled(),
             'ZIPArchive' => $this->isZIParchiveInstalled(),
+            'PDOmySQL' => $this->isPDOmySQLenabled()
         );
         return ($prompt_result) ? self::promptResult($result) : $result;
     }
@@ -496,4 +538,5 @@ $info->setRequiredMySQLVersion('5.0.3');
 $info->setRequiredCURL(true);
 $info->setRequriredZIPArchive(true);
 $info->setRequiredInnoDB(true);
+$info->setRequiredPDOmySQL(true);
 $info->exec();

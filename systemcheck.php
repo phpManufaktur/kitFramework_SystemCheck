@@ -9,6 +9,9 @@
  * @license MIT License (MIT) http://www.opensource.org/licenses/MIT
  */
 
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 class SystemCheck
 {
     protected static $detected_PHP_VERSION = null;
@@ -34,6 +37,9 @@ class SystemCheck
     protected static $PDO_MySQL_enabled = null;
     protected static $required_PDO_MySQL = null;
 
+    protected static $magic_quotes_gpc = null;
+    protected static $required_magic_quotes_gpc = null;
+
     protected static $supported_cms_types = array(
         'WebsiteBaker',
         'LEPTON CMS',
@@ -49,6 +55,9 @@ class SystemCheck
         self::setCMSpath();
     }
 
+    /**
+     * Set the path of the parent CMS
+     */
     protected static function setCMSpath()
     {
         //  we assume that the SystemCheck is placed at / or at /kit2
@@ -71,6 +80,16 @@ class SystemCheck
     public function setRequriredPHPVersion($php_version)
     {
         self::$required_PHP_VERSION = $php_version;
+    }
+
+    /**
+     * Set the required Magic Quotes settings
+     *
+     * @param unknown $magic_quotes
+     */
+    public function setRequiredMagicQuotesGPC($magic_quotes)
+    {
+        self::$required_magic_quotes_gpc = $magic_quotes;
     }
 
     /**
@@ -346,6 +365,26 @@ class SystemCheck
     }
 
     /**
+     * Return an array with information about the Magic Quotes settings
+     *
+     * @return array
+     */
+    protected function isMagicQuotesGPC()
+    {
+        self::$magic_quotes_gpc = filter_var(ini_get('magic_quotes_gpc'), FILTER_VALIDATE_BOOLEAN);
+
+        if (is_null(self::$required_magic_quotes_gpc)) {
+            self::$required_magic_quotes_gpc = self::$magic_quotes_gpc;
+        }
+        return array(
+            'installed' => self::$magic_quotes_gpc ? 'on' : 'off',
+            'required' => self::$required_magic_quotes_gpc ? 'on' : 'off',
+            'checked' => (self::$required_magic_quotes_gpc && self::$magic_quotes_gpc) ? 0 : 1,
+            'css' => (self::$required_magic_quotes_gpc === self::$magic_quotes_gpc) ? 'checked' : 'fail'
+        );
+    }
+
+    /**
      * Return an array with information about the ZipArchive
      *
      * @return multitype:number
@@ -462,6 +501,13 @@ class SystemCheck
             <div class="value {$result['PHP_VERSION']['css']}">{$result['PHP_VERSION']['installed']}</div>
         </fieldset>
         <fieldset>
+            <legend>Magic Quotes</legend>
+            <div class="label">Required</div>
+            <div class="value">{$result['MagicQuotesGPC']['required']}</div>
+            <div class="label">php.ini setting</div>
+            <div class="value {$result['MagicQuotesGPC']['css']}">{$result['MagicQuotesGPC']['installed']}</div>
+        </fieldset>
+        <fieldset>
             <legend>MySQL Version</legend>
             <div class="label">Required</div>
             <div class="value">{$result['MySQL']['required']}</div>
@@ -517,7 +563,8 @@ EOD;
             'InnoDB' => $this->getInnoDBinformation(),
             'cURL' => $this->isCURLinstalled(),
             'ZIPArchive' => $this->isZIParchiveInstalled(),
-            'PDOmySQL' => $this->isPDOmySQLenabled()
+            'PDOmySQL' => $this->isPDOmySQLenabled(),
+            'MagicQuotesGPC' => $this->isMagicQuotesGPC()
         );
         return ($prompt_result) ? self::promptResult($result) : $result;
     }
@@ -526,10 +573,11 @@ EOD;
 
 
 if (isset($_GET['action']) && ($_GET['action'] === strtolower('phpinfo'))) {
-    // show phpinfo()
     phpinfo();
     exit();
 }
+
+
 
 // check the system for the kitFramework
 $info = new SystemCheck();
@@ -539,4 +587,5 @@ $info->setRequiredCURL(true);
 $info->setRequriredZIPArchive(true);
 $info->setRequiredInnoDB(true);
 $info->setRequiredPDOmySQL(true);
+$info->setRequiredMagicQuotesGPC(false);
 $info->exec();
